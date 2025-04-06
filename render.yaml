@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: smart-scraper
+    env: node
+    buildCommand: npm install && cd client && npm install --production=false && npm run build && cd ../server && npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: CLIENT_URL
+        fromService:
+          type: web
+          name: smart-scraper
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: GEMINI_API_KEY
+        sync: false
+    autoDeploy: true 
