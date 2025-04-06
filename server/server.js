@@ -31,7 +31,46 @@ import { summarizeReviews } from "./utils/Gemini.utils.js"; // Import summarizeR
 puppeteerExtra.use(StealthPlugin());
 
 const app = express();
-app.use(cors());
+
+// Improved CORS configuration
+const corsOptions = {
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl requests)
+    if (!origin) return callback(null, true);
+    
+    // In development, allow localhost
+    // In production, allow all origins or specify your frontend URL
+    const allowedOrigins = [
+      // Development URLs
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000',
+      // Production URLs - add your Render frontend URL here
+      // e.g., 'https://your-app-name.onrender.com'
+    ];
+    
+    // In production, allow any origin
+    if (process.env.NODE_ENV === 'production') {
+      return callback(null, true);
+    }
+    
+    // In development, check against allowed origins
+    if (allowedOrigins.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
+
+// Apply CORS middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Store extracted offers as a global variable
@@ -45,6 +84,11 @@ const waitForTimeout = async (page, ms) => {
 };
 
 app.post("/scrape", async (req, res) => {
+  // Set CORS headers explicitly for this route
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  
   const { link } = req.body;
 
   if (!link || !link.includes("amazon")) {
@@ -802,6 +846,29 @@ app.post("/scrape", async (req, res) => {
     console.error("Error scraping data:", error);
     res.status(500).json({ error: "Failed to scrape data. Please try again." });
   }
+});
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error('Server error:', err.stack);
+  
+  // Set proper CORS headers
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
+  });
+});
+
+// Add a fallback for OPTIONS requests to handle preflight
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+  res.sendStatus(200);
 });
 
 // Serve static files from the React frontend app if in production
