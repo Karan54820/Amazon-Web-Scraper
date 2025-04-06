@@ -67,6 +67,25 @@ const apiLimiter = rateLimit({
 // API routes with rate limiting
 app.use('/api', apiLimiter);
 
+// Add a health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Add a status endpoint for debugging
+app.get('/status', (req, res) => {
+  res.status(200).json({
+    status: 'running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV,
+    memory: process.memoryUsage(),
+    uptime: process.uptime(),
+    version: process.version,
+    platform: process.platform,
+    hostname: require('os').hostname()
+  });
+});
+
 // Store extracted offers as a global variable
 let extractedBankOffers = [];
 
@@ -893,20 +912,10 @@ app.get('*', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  
-  // Special handling for path-to-regexp errors
-  if (err.message && err.message.includes('Missing parameter name')) {
-    console.error('Path-to-regexp error detected. This typically happens when a URL is mistakenly used as a route pattern.');
-    return res.status(500).json({ 
-      error: 'Invalid route configuration',
-      message: 'The server encountered an error with route configuration.'
-    });
-  }
-  
-  res.status(500).json({ 
-    error: 'Server error',
-    message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
+  console.error('Server error:', err);
+  res.status(500).json({
+    error: 'Internal Server Error',
+    message: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message
   });
 });
 
@@ -920,11 +929,26 @@ app.use((req, res, next) => {
 
 // Configure server keep-alive settings
 const server = app.listen(PORT, HOST, () => {
-  console.log(`Server is running on ${HOST}:${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
-  console.log(`API available at: http://localhost:${PORT}/api/scrape and http://localhost:${PORT}/api/reviews`);
-  console.log(`Frontend available at: http://localhost:${PORT}`);
+  console.log(`Server running on http://${HOST}:${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV}`);
+  console.log(`Timeouts configured: server=${SERVER_TIMEOUT}ms, keepAlive=${KEEP_ALIVE_TIMEOUT}ms, headers=${HEADERS_TIMEOUT}ms`);
 });
 
-// Set server timeouts
 server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT;
 server.headersTimeout = HEADERS_TIMEOUT;
+server.timeout = SERVER_TIMEOUT;
+
+// Graceful shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT signal received: closing HTTP server');
+  server.close(() => {
+    console.log('HTTP server closed');
+  });
+});
