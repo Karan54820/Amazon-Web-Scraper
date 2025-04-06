@@ -1,27 +1,23 @@
 {
-  "name": "smart-scraper-server",
+  "name": "web-scrapper-server",
   "version": "1.0.0",
   "description": "A server for scraping Amazon product data and generating AI-based review summaries.",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "start:prod": "pm2-runtime start server.js --node-args='--max-old-space-size=512'",
     "dev": "nodemon server.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
-    "body-parser": "^1.20.2",
+    "body-parser": "^2.2.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
     "openai": "^4.91.1",
     "puppeteer": "^24.6.0",
     "puppeteer-extra": "^3.3.6",
-    "puppeteer-extra-plugin-stealth": "^2.11.2",
-    "helmet": "^7.1.0",
-    "express-rate-limit": "^7.1.5",
-    "pm2": "^5.3.1"
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
@@ -33,9 +29,6 @@
     "openai",
     "express"
   ],
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "author": "SmartScraper Team",
+  "author": "Your Name",
   "license": "MIT"
 }

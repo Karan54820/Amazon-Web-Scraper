@@ -1,90 +1,38 @@
+// Load environment variables from .env file
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get the directory name of the current module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Load environment variables from .env file with debug path
+const dotenvResult = dotenv.config({ path: path.resolve(__dirname, '.env') });
+// if (dotenvResult.error) {
+//   console.error("Error loading .env file:", dotenvResult.error);
+// } else {
+//   console.log(".env file loaded successfully");
+//   console.log("Environment variables loaded:", {
+//     PORT: process.env.PORT ? "Set" : "Not set",
+//     GEMINI_API_KEY: process.env.GEMINI_API_KEY ? `Set (${process.env.GEMINI_API_KEY.slice(0, 5)}...)` : "Not set"
+//   });
+// }
+
 import express from "express";
 import puppeteer from "puppeteer";
 import puppeteerExtra from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
 import cors from "cors";
-import { summarizeReviews } from "./utils/openAi.utils.js"; // Import summarizeReviews
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
-import fs from 'fs';
-import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
-import { fetchAmazonData, findReviews } from './scraper.js';
+import { summarizeReviews } from "./utils/Gemini.utils.js"; // Import summarizeReviews
 
-// Load environment variables
-dotenv.config();
-
-// Get dirname in ES module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 // Add the stealth plugin to puppeteer
 puppeteerExtra.use(StealthPlugin());
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-const HOST = process.env.HOST || '0.0.0.0';
-const SERVER_TIMEOUT = parseInt(process.env.SERVER_TIMEOUT || 120000);
-const KEEP_ALIVE_TIMEOUT = parseInt(process.env.KEEP_ALIVE_TIMEOUT || 120000);
-const HEADERS_TIMEOUT = parseInt(process.env.HEADERS_TIMEOUT || 120000);
-
-// CORS configuration based on environment
-const corsOptions = {
-  origin: process.env.NODE_ENV === 'production' 
-    ? process.env.CLIENT_URL 
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json());
-
-// Security middleware with custom CSP to allow Google Fonts
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        connectSrc: ["'self'", "http://localhost:*", "https://*.onrender.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
-        imgSrc: ["'self'", "data:", "https://*.amazonaws.com", "https://*.amazon.in"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        frameSrc: ["'self'"]
-      }
-    }
-  })
-);
-
-// Apply rate limiting
-const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // limit each IP to 50 requests per windowMs
-  message: "Too many requests from this IP, please try again later"
-});
-
-// API routes with rate limiting
-app.use('/api', apiLimiter);
-
-// Add a health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// Add a status endpoint for debugging
-app.get('/status', (req, res) => {
-  res.status(200).json({
-    status: 'running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    memory: process.memoryUsage(),
-    uptime: process.uptime(),
-    version: process.version,
-    platform: process.platform,
-    hostname: require('os').hostname()
-  });
-});
 
 // Store extracted offers as a global variable
 let extractedBankOffers = [];
@@ -96,7 +44,6 @@ const waitForTimeout = async (page, ms) => {
   }, ms);
 };
 
-// API Routes
 app.post("/scrape", async (req, res) => {
   const { link } = req.body;
 
@@ -857,98 +804,7 @@ app.post("/scrape", async (req, res) => {
   }
 });
 
-app.get('/api/scrape', async (req, res) => {
-  try {
-    const { url } = req.query;
-    if (!url) {
-      return res.status(400).json({ error: 'URL is required' });
-    }
-    
-    console.log(`Scraping URL: ${url}`);
-    const data = await fetchAmazonData(url);
-    res.json(data);
-  } catch (error) {
-    console.error('Scraping error:', error);
-    res.status(500).json({ error: error.message || 'An error occurred during scraping' });
-  }
-});
-
-app.get('/api/reviews', async (req, res) => {
-  try {
-    const { url } = req.query;
-    if (!url) {
-      return res.status(400).json({ error: 'URL is required' });
-    }
-    
-    console.log(`Finding reviews for URL: ${url}`);
-    const reviews = await findReviews(url);
-    res.json(reviews);
-  } catch (error) {
-    console.error('Review fetching error:', error);
-    res.status(500).json({ error: error.message || 'An error occurred while fetching reviews' });
-  }
-});
-
-// Check if we're in production mode
-const isProduction = process.env.NODE_ENV === 'production';
-
-// Use fallback directory if client/build doesn't exist
-let staticPath = path.resolve(__dirname, '../client/dist');
-if (!fs.existsSync(staticPath)) {
-  console.log('Client build directory not found, using fallback directory');
-  staticPath = path.resolve(__dirname, 'public');
-}
-
-// Log the static path being used
-console.log(`Serving static files from: ${staticPath}`);
-
-// Serve static files
-app.use(express.static(staticPath));
-
-// For any other route, serve the index.html file from the static directory
-app.get('*', (req, res) => {
-  res.sendFile(path.join(staticPath, 'index.html'));
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message
-  });
-});
-
-// Increase timeouts to prevent connection reset errors
-app.use((req, res, next) => {
-  // Increase timeout for all requests
-  req.setTimeout(SERVER_TIMEOUT);
-  res.setTimeout(SERVER_TIMEOUT);
-  next();
-});
-
-// Configure server keep-alive settings
-const server = app.listen(PORT, HOST, () => {
-  console.log(`Server running on http://${HOST}:${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV}`);
-  console.log(`Timeouts configured: server=${SERVER_TIMEOUT}ms, keepAlive=${KEEP_ALIVE_TIMEOUT}ms, headers=${HEADERS_TIMEOUT}ms`);
-});
-
-server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT;
-server.headersTimeout = HEADERS_TIMEOUT;
-server.timeout = SERVER_TIMEOUT;
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-  });
-});
-
-process.on('SIGINT', () => {
-  console.log('SIGINT signal received: closing HTTP server');
-  server.close(() => {
-    console.log('HTTP server closed');
-  });
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => {
+  console.log(`Server is running on http://localhost:${PORT}`);
 });

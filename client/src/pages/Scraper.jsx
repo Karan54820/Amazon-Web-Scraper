@@ -4,9 +4,6 @@ import LoadingAnimation from "../components/LoadingAnimation";
 import { validateScrapedData, formatScrapingRequest } from "../utils/scrapingHelpers";
 import ImageGalleryTabs from "../components/ImageGalleryTabs";
 
-// Get API URL from environment variables
-const API_URL = import.meta.env.VITE_REACT_APP_API_URL || 'http://localhost:5000';
-
 export default function Scraper({ setShowCircle }) {
   const [link, setLink] = useState("");
   const [data, setData] = useState(null); // To store the scraped data
@@ -88,7 +85,7 @@ export default function Scraper({ setShowCircle }) {
     try {
       console.log("Sending request to backend with payload:", request);
       
-      const response = await fetch(`${API_URL}/scrape`, {
+      const response = await fetch("http://localhost:8000/scrape", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
