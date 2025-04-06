@@ -1,13 +1,14 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import { LazyMotion, domAnimation } from 'framer-motion'
-import './index.css'
-import App from './App.jsx'
+import './process.js';
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { LazyMotion, domAnimation } from 'framer-motion';
+import App from './App.jsx';
+import './index.css';
 
-createRoot(document.getElementById('root')).render(
-  <StrictMode>
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
     <LazyMotion features={domAnimation}>
       <App />
     </LazyMotion>
-  </StrictMode>,
-)
+  </React.StrictMode>
+);

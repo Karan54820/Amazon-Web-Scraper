@@ -12,7 +12,12 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), tailwindcss()],
     define: {
       // Make environment variables available to the client
-      'process.env.REACT_APP_API_URL': JSON.stringify(env.REACT_APP_API_URL || 'http://localhost:5000'),
+      'import.meta.env.REACT_APP_API_URL': JSON.stringify(env.REACT_APP_API_URL || 'http://localhost:5000'),
+      // Add a global process definition to avoid "process is not defined" errors
+      'process.env': JSON.stringify({
+        NODE_ENV: mode,
+        REACT_APP_API_URL: env.REACT_APP_API_URL || 'http://localhost:5000'
+      })
     },
     server: {
       port: 3000,
