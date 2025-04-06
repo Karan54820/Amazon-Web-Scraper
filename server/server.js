@@ -804,6 +804,17 @@ app.post("/scrape", async (req, res) => {
   }
 });
 
+// Serve static files from the React frontend app if in production
+if (process.env.NODE_ENV === 'production') {
+  const frontendPath = path.join(__dirname, '../client/dist');
+  app.use(express.static(frontendPath));
+  
+  // Serve the index.html file for any request that doesn't match an API route
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+}
+
 const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
