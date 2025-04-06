@@ -33,7 +33,7 @@ A full-stack web application that allows users to scrape and analyze product dat
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/Karan54820/Amazon-Web-Scraper
 cd amazon-web-scraper
 ```
 
