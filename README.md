@@ -109,7 +109,3 @@ The application is configured to work with most cloud platforms like Render, Ver
 1. Set the required environment variables
 2. Deploy using the platform's deployment method
 3. Ensure the server is running and can handle Puppeteer (headless browser) operations
-
-## License
-
-MIT License 

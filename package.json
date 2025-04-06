@@ -1,0 +1,25 @@
+{
+  "name": "smart-scraper",
+  "version": "1.0.0",
+  "description": "A web scraper for Amazon India smart TV listings",
+  "main": "index.js",
+  "scripts": {
+    "start": "npm run start:server",
+    "client": "cd client && npm start",
+    "server": "cd server && npm run dev",
+    "start:server": "cd server && npm start",
+    "build": "cd client && npm run build",
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install",
+    "heroku-postbuild": "npm run install:all && npm run build"
+  },
+  "keywords": ["web-scraper", "amazon", "smart-tv", "puppeteer"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 
