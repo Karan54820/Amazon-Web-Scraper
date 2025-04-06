@@ -13,6 +13,28 @@ const waitForTimeout = async (page, ms) => {
   }, ms);
 };
 
+// Setup browser launch options with optimized worker settings
+const getBrowserLaunchOptions = () => {
+  return {
+    headless: true,
+    args: [
+      "--no-sandbox", 
+      "--disable-setuid-sandbox",
+      "--disable-web-security",
+      "--disable-features=IsolateOrigins,site-per-process",
+      "--disable-accelerated-2d-canvas",
+      "--disable-gpu",
+      "--window-size=1920,1080",
+      "--disable-dev-shm-usage", // Prevents running out of memory in containers
+      "--single-process", // Reduces worker issues in constrained environments
+      "--no-zygote" // Prevents worker issues
+    ],
+    // Set conservative browser timeouts
+    timeout: 60000,
+    protocolTimeout: 60000
+  };
+};
+
 /**
  * Fetches product data from Amazon
  * @param {string} url - Amazon product URL
@@ -25,21 +47,11 @@ export async function fetchAmazonData(url) {
 
   // Store extracted offers as a global variable
   let extractedBankOffers = [];
+  let browser;
 
   try {
-    // Launch Puppeteer with improved stealth settings
-    const browser = await puppeteerExtra.launch({
-      headless: true,
-      args: [
-        "--no-sandbox", 
-        "--disable-setuid-sandbox",
-        "--disable-web-security",
-        "--disable-features=IsolateOrigins,site-per-process",
-        "--disable-accelerated-2d-canvas",
-        "--disable-gpu",
-        "--window-size=1920,1080"
-      ],
-    });
+    // Launch Puppeteer with improved settings
+    browser = await puppeteerExtra.launch(getBrowserLaunchOptions());
 
     const page = await browser.newPage();
 
@@ -74,6 +86,10 @@ export async function fetchAmazonData(url) {
       secure: true,
       sameSite: 'None',
     });
+
+    // Set default navigation timeout
+    page.setDefaultNavigationTimeout(60000);
+    page.setDefaultTimeout(60000);
 
     // Add localStorage items to appear more like a real user
     await page.evaluateOnNewDocument(() => {
@@ -248,11 +264,19 @@ export async function fetchAmazonData(url) {
 
     // Close the browser
     await browser.close();
+    browser = null;
     
     // Return the scraped data
     return data;
   } catch (error) {
     console.error("Error scraping data:", error);
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error("Error closing browser:", closeError);
+      }
+    }
     throw new Error(`Failed to scrape data: ${error.message}`);
   }
 }
@@ -267,23 +291,20 @@ export async function findReviews(url) {
     throw new Error('Please provide a valid Amazon link.');
   }
 
+  let browser;
   try {
     // Launch browser
-    const browser = await puppeteerExtra.launch({
-      headless: true,
-      args: [
-        "--no-sandbox", 
-        "--disable-setuid-sandbox",
-        "--disable-web-security",
-        "--disable-features=IsolateOrigins,site-per-process"
-      ],
-    });
+    browser = await puppeteerExtra.launch(getBrowserLaunchOptions());
 
     const page = await browser.newPage();
     
     // Set user agent and other settings
     await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
     await page.setViewport({ width: 1280, height: 800 });
+    
+    // Set default navigation timeout
+    page.setDefaultNavigationTimeout(60000);
+    page.setDefaultTimeout(60000);
 
     // Navigate to the product page
     await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
@@ -331,6 +352,7 @@ export async function findReviews(url) {
     
     // Close the browser
     await browser.close();
+    browser = null;
     
     // Generate AI summary for reviews
     const reviewTexts = reviewsData.reviews.map(review => review.text);
@@ -345,6 +367,13 @@ export async function findReviews(url) {
     };
   } catch (error) {
     console.error("Error finding reviews:", error);
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (closeError) {
+        console.error("Error closing browser:", closeError);
+      }
+    }
     throw new Error(`Failed to find reviews: ${error.message}`);
   }
 } 

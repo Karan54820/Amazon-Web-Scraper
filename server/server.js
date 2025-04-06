@@ -23,6 +23,11 @@ const __dirname = path.dirname(__filename);
 puppeteerExtra.use(StealthPlugin());
 
 const app = express();
+const PORT = process.env.PORT || 5000;
+const HOST = process.env.HOST || '0.0.0.0';
+const SERVER_TIMEOUT = parseInt(process.env.SERVER_TIMEOUT || 120000);
+const KEEP_ALIVE_TIMEOUT = parseInt(process.env.KEEP_ALIVE_TIMEOUT || 120000);
+const HEADERS_TIMEOUT = parseInt(process.env.HEADERS_TIMEOUT || 120000);
 
 // CORS configuration based on environment
 const corsOptions = {
@@ -905,11 +910,21 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Get port from environment variable or default to 5000
-const PORT = process.env.PORT || 5000;
+// Increase timeouts to prevent connection reset errors
+app.use((req, res, next) => {
+  // Increase timeout for all requests
+  req.setTimeout(SERVER_TIMEOUT);
+  res.setTimeout(SERVER_TIMEOUT);
+  next();
+});
 
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+// Configure server keep-alive settings
+const server = app.listen(PORT, HOST, () => {
+  console.log(`Server is running on ${HOST}:${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
   console.log(`API available at: http://localhost:${PORT}/api/scrape and http://localhost:${PORT}/api/reviews`);
   console.log(`Frontend available at: http://localhost:${PORT}`);
 });
+
+// Set server timeouts
+server.keepAliveTimeout = KEEP_ALIVE_TIMEOUT;
+server.headersTimeout = HEADERS_TIMEOUT;

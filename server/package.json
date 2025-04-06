@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+    "start:prod": "pm2-runtime start server.js --node-args='--max-old-space-size=512'",
     "dev": "nodemon server.js"
   },
   "dependencies": {
@@ -19,7 +20,8 @@
     "puppeteer-extra": "^3.3.6",
     "puppeteer-extra-plugin-stealth": "^2.11.2",
     "helmet": "^7.1.0",
-    "express-rate-limit": "^7.1.5"
+    "express-rate-limit": "^7.1.5",
+    "pm2": "^5.3.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"

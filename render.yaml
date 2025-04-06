@@ -2,8 +2,8 @@ services:
   - type: web
     name: smart-scraper
     env: node
-    buildCommand: npm install && cd server && npm install && cd ../client && npm install --production=false && npm run build && mkdir -p server/public && cp -r client/build/* server/public/ || true
-    startCommand: npm start
+    buildCommand: npm install && cd server && npm install && cd ../client && npm install --production=false && npm run build && mkdir -p ../server/public && cp -r build/* ../server/public/ || true && cd .. && npm install pm2 -g
+    startCommand: pm2-runtime start ecosystem.config.js
     staticPublishPath: ./client/build
     headers:
       - path: /*
@@ -23,6 +23,8 @@ services:
         value: production
       - key: PORT
         value: 5000
+      - key: HOST
+        value: 0.0.0.0
       - key: CLIENT_URL
         fromService:
           type: web
@@ -35,7 +37,24 @@ services:
           envVarKey: RENDER_EXTERNAL_URL
       - key: GEMINI_API_KEY
         sync: false
+      - key: SERVER_TIMEOUT
+        value: 120000
+      - key: KEEP_ALIVE_TIMEOUT
+        value: 120000
+      - key: HEADERS_TIMEOUT
+        value: 120000
+      - key: PM2_PUBLIC_KEY
+        sync: false
+      - key: PM2_SECRET_KEY
+        sync: false
     autoDeploy: true
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 80
+      targetCPUPercent: 80
+    healthCheckPath: /health
+    numWorkers: 1
     buildFilter:
       paths:
         - server/**/*.js
@@ -44,4 +63,5 @@ services:
         - client/public/**/*
         - package.json
         - package-lock.json
-        - render.yaml 
+        - render.yaml
+        - ecosystem.config.js 
