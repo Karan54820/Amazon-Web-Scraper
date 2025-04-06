@@ -54,6 +54,16 @@ export default function Scraper({ setShowCircle }) {
     };
   };
 
+  // Get the base API URL - in production this will use the same domain as the frontend
+  const getApiUrl = () => {
+    // In production (on Render), use the same origin as the frontend
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      return '';  // Empty string means use the same origin as the frontend
+    }
+    // In development, use localhost:8000
+    return 'http://localhost:8000';
+  };
+
   const handleScrape = async () => {
     if (link.trim() === "") {
       alert("Please enter a valid link!");
@@ -85,7 +95,7 @@ export default function Scraper({ setShowCircle }) {
     try {
       console.log("Sending request to backend with payload:", request);
       
-      const response = await fetch("http://localhost:8000/scrape", {
+      const response = await fetch(`${getApiUrl()}/scrape`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -8,7 +8,7 @@
     "server": "cd server && npm run dev",
     "start": "concurrently \"npm run server\" \"npm run client\"",
     "start:prod": "cd server && npm start",
-    "build": "cd client && npm install && npm run build && cd ../server && npm install",
+    "build": "cd client && rm -rf dist && npm install && npm run build && cd ../server && npm install",
     "install:all": "npm install && cd server && npm install && cd ../client && npm install"
   },
   "keywords": [
