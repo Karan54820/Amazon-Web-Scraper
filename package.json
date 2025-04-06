@@ -9,11 +9,11 @@
     "server": "cd server && npm run dev",
     "start:server": "cd server && npm start",
     "build": "cd client && npm install && npm run build",
-    "postbuild": "cp -r client/build server/public || true",
+    "postbuild": "mkdir -p server/public && cp -r client/build/* server/public/ || true",
     "dev": "concurrently \"npm run server\" \"npm run client\"",
     "install:all": "npm install && cd client && npm install && cd ../server && npm install",
     "heroku-postbuild": "npm run install:all && npm run build",
-    "render-postbuild": "cd client && npm install --production=false && npm run build"
+    "render-postbuild": "cd client && npm install --production=false && npm run build && npm run postbuild"
   },
   "keywords": ["web-scraper", "amazon", "smart-tv", "puppeteer"],
   "author": "",

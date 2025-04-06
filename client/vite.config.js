@@ -29,6 +29,10 @@ export default defineConfig(({ mode }) => {
       outDir: 'build',
       sourcemap: mode === 'development',
       minify: mode === 'production',
+      // Ensure assets are handled correctly
+      assetsDir: 'assets',
+      // Allow proper handling of static assets
+      assetsInlineLimit: 4096,
       // Chunk size optimization
       chunkSizeWarningLimit: 1600,
       rollupOptions: {
@@ -40,5 +44,6 @@ export default defineConfig(({ mode }) => {
         },
       },
     },
+    base: './', // Ensure assets are referenced with relative paths
   }
 })

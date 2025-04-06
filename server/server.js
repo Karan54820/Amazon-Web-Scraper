@@ -32,6 +32,15 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// After the CORS configuration, add CSP headers
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self'; connect-src 'self' http://localhost:* https://*.onrender.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.amazonaws.com https://*.amazon.in; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; frame-src 'self'"
+  );
+  next();
+});
+
 // Store extracted offers as a global variable
 let extractedBankOffers = [];
 
@@ -42,6 +51,7 @@ const waitForTimeout = async (page, ms) => {
   }, ms);
 };
 
+// API Routes
 app.post("/scrape", async (req, res) => {
   const { link } = req.body;
 
@@ -802,8 +812,12 @@ app.post("/scrape", async (req, res) => {
   }
 });
 
+// Any other API routes should be defined above this line
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
+  console.log("Server running in production mode, serving static files");
+  
   // Log the static file path for debugging
   let staticPath = path.join(__dirname, '../client/build');
   let indexPath = path.join(staticPath, 'index.html');
@@ -821,6 +835,21 @@ if (process.env.NODE_ENV === 'production') {
   // Verify the path exists
   if (fs.existsSync(staticPath)) {
     console.log(`Static path exists: ${staticPath}`);
+    
+    // Special check for index.html
+    if (fs.existsSync(indexPath)) {
+      console.log(`index.html found at: ${indexPath}`);
+    } else {
+      console.error(`index.html NOT FOUND at: ${indexPath}`);
+    }
+    
+    // List files in directory for debugging
+    try {
+      const files = fs.readdirSync(staticPath);
+      console.log(`Files in ${staticPath}:`, files);
+    } catch (err) {
+      console.error(`Error reading directory ${staticPath}:`, err);
+    }
   } else {
     console.warn(`Neither primary nor fallback static path exists!`);
   }
@@ -830,13 +859,13 @@ if (process.env.NODE_ENV === 'production') {
 
   // For any request that doesn't match an API route, send the React app
   app.get('*', function(req, res) {
-    console.log(`Sending index.html from: ${indexPath}`);
+    console.log(`Request for: ${req.path}, sending index.html`);
     
     if (fs.existsSync(indexPath)) {
       res.sendFile(indexPath);
     } else {
-      console.error(`index.html not found at: ${indexPath}`);
-      res.status(404).send('Not found: index.html is missing');
+      console.error(`Cannot serve index.html - file not found at: ${indexPath}`);
+      res.status(404).send('Not found: index.html is missing. Please check server configuration.');
     }
   });
 }

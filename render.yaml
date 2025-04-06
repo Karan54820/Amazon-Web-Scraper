@@ -2,8 +2,13 @@ services:
   - type: web
     name: smart-scraper
     env: node
-    buildCommand: npm install && cd server && npm install && cd ../client && npm install --production=false && npm run build
+    buildCommand: npm install && cd server && npm install && cd ../client && npm install --production=false && npm run build && mkdir -p server/public && cp -r client/build/* server/public/ || true
     startCommand: npm start
+    staticPublishPath: ./client/build
+    headers:
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; connect-src 'self' http://localhost:* https://*.onrender.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.amazonaws.com https://*.amazon.in; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; frame-src 'self'"
     envVars:
       - key: NODE_ENV
         value: production

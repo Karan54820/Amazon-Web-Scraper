@@ -1,10 +1,60 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Amazon Web Scraper</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' http://localhost:* https://*.onrender.com; font-src 'self' data:; img-src 'self' data: https://*.amazonaws.com https://*.amazon.in; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; frame-src 'self'" />
+    <title>SmartScraper - Amazon Smart TV Scraper</title>
+    <style>
+      /* Include Inter font directly */
+      @font-face {
+        font-family: 'Inter';
+        font-style: normal;
+        font-weight: 300 900; /* Variable font weight range */
+        font-display: swap;
+        src: url('/fonts/Inter-VariableFont.woff2') format('woff2');
+      }
+      
+      /* Include Roboto font directly */
+      @font-face {
+        font-family: 'Roboto';
+        font-style: normal;
+        font-weight: 300;
+        font-display: swap;
+        src: url('/fonts/Roboto-Light.woff2') format('woff2');
+      }
+      
+      @font-face {
+        font-family: 'Roboto';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/Roboto-Regular.woff2') format('woff2');
+      }
+      
+      @font-face {
+        font-family: 'Roboto';
+        font-style: normal;
+        font-weight: 500;
+        font-display: swap;
+        src: url('/fonts/Roboto-Medium.woff2') format('woff2');
+      }
+      
+      /* Include Roboto Mono font directly */
+      @font-face {
+        font-family: 'Roboto Mono';
+        font-style: normal;
+        font-weight: 400;
+        font-display: swap;
+        src: url('/fonts/RobotoMono-Regular.woff2') format('woff2');
+      }
+      
+      /* System font fallbacks */
+      body {
+        font-family: 'Inter', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>

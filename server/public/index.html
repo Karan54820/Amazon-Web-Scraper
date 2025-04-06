@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartScraper - Amazon Smart TV Scraper</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #121212;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            padding: 2rem;
+            background: rgba(30, 30, 30, 0.7);
+            border-radius: 16px;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-size: 3rem;
+        }
+        p {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            color: #e0e0e0;
+        }
+        .loading {
+            margin-top: 2rem;
+            height: 4px;
+            width: 100%;
+            background: rgba(128, 128, 128, 0.2);
+            overflow: hidden;
+            position: relative;
+        }
+        .loading:after {
+            content: '';
+            position: absolute;
+            height: 100%;
+            width: 30%;
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+            animation: loading 1.5s infinite ease-in-out;
+        }
+        @keyframes loading {
+            0% { left: -30%; }
+            100% { left: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>SmartScraper</h1>
+        <p>The application is loading or initializing. Please wait a moment...</p>
+        <div class="loading"></div>
+    </div>
+</body>
+</html> 
