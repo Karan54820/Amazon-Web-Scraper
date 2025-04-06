@@ -8,6 +8,9 @@ import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
 import fs from 'fs';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import { fetchAmazonData, findReviews } from './scraper.js';
 
 // Load environment variables
 dotenv.config();
@@ -32,14 +35,32 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
-// After the CORS configuration, add CSP headers
-app.use((req, res, next) => {
-  res.setHeader(
-    "Content-Security-Policy",
-    "default-src 'self'; connect-src 'self' http://localhost:* https://*.onrender.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.amazonaws.com https://*.amazon.in; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; frame-src 'self'"
-  );
-  next();
+// Security middleware with custom CSP to allow Google Fonts
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        connectSrc: ["'self'", "http://localhost:*", "https://*.onrender.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
+        imgSrc: ["'self'", "data:", "https://*.amazonaws.com", "https://*.amazon.in"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        frameSrc: ["'self'"]
+      }
+    }
+  })
+);
+
+// Apply rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 50, // limit each IP to 50 requests per windowMs
+  message: "Too many requests from this IP, please try again later"
 });
+
+// API routes with rate limiting
+app.use('/api', apiLimiter);
 
 // Store extracted offers as a global variable
 let extractedBankOffers = [];
@@ -812,63 +833,58 @@ app.post("/scrape", async (req, res) => {
   }
 });
 
-// Any other API routes should be defined above this line
-
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  console.log("Server running in production mode, serving static files");
-  
-  // Log the static file path for debugging
-  let staticPath = path.join(__dirname, '../client/build');
-  let indexPath = path.join(staticPath, 'index.html');
-  
-  // Check if client/build exists, otherwise fall back to server/public
-  if (!fs.existsSync(staticPath)) {
-    console.warn(`Static path does not exist: ${staticPath}`);
-    staticPath = path.join(__dirname, 'public');
-    indexPath = path.join(staticPath, 'index.html');
-    console.log(`Trying fallback static path: ${staticPath}`);
+app.get('/api/scrape', async (req, res) => {
+  try {
+    const { url } = req.query;
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+    
+    console.log(`Scraping URL: ${url}`);
+    const data = await fetchAmazonData(url);
+    res.json(data);
+  } catch (error) {
+    console.error('Scraping error:', error);
+    res.status(500).json({ error: error.message || 'An error occurred during scraping' });
   }
-  
-  console.log(`Serving static files from: ${staticPath}`);
-  
-  // Verify the path exists
-  if (fs.existsSync(staticPath)) {
-    console.log(`Static path exists: ${staticPath}`);
-    
-    // Special check for index.html
-    if (fs.existsSync(indexPath)) {
-      console.log(`index.html found at: ${indexPath}`);
-    } else {
-      console.error(`index.html NOT FOUND at: ${indexPath}`);
-    }
-    
-    // List files in directory for debugging
-    try {
-      const files = fs.readdirSync(staticPath);
-      console.log(`Files in ${staticPath}:`, files);
-    } catch (err) {
-      console.error(`Error reading directory ${staticPath}:`, err);
-    }
-  } else {
-    console.warn(`Neither primary nor fallback static path exists!`);
-  }
-  
-  // Serve static files from the React app
-  app.use(express.static(staticPath));
+});
 
-  // For any request that doesn't match an API route, send the React app
-  app.get('*', function(req, res) {
-    console.log(`Request for: ${req.path}, sending index.html`);
-    
-    if (fs.existsSync(indexPath)) {
-      res.sendFile(indexPath);
-    } else {
-      console.error(`Cannot serve index.html - file not found at: ${indexPath}`);
-      res.status(404).send('Not found: index.html is missing. Please check server configuration.');
+app.get('/api/reviews', async (req, res) => {
+  try {
+    const { url } = req.query;
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
     }
-  });
+    
+    console.log(`Finding reviews for URL: ${url}`);
+    const reviews = await findReviews(url);
+    res.json(reviews);
+  } catch (error) {
+    console.error('Review fetching error:', error);
+    res.status(500).json({ error: error.message || 'An error occurred while fetching reviews' });
+  }
+});
+
+// Check if we're in production mode
+const isProduction = process.env.NODE_ENV === 'production';
+
+// Use fallback directory if client/build doesn't exist
+let staticPath = path.resolve(__dirname, '../client/dist');
+if (!fs.existsSync(staticPath)) {
+  console.log('Client build directory not found, using fallback directory');
+  staticPath = path.resolve(__dirname, 'public');
 }
+
+// Log the static path being used
+console.log(`Serving static files from: ${staticPath}`);
+
+// Serve static files
+app.use(express.static(staticPath));
+
+// For any other route, serve the index.html file from the static directory
+app.get('*', (req, res) => {
+  res.sendFile(path.join(staticPath, 'index.html'));
+});
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -894,4 +910,6 @@ const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT} in ${process.env.NODE_ENV || 'development'} mode`);
+  console.log(`API available at: http://localhost:${PORT}/api/scrape and http://localhost:${PORT}/api/reviews`);
+  console.log(`Frontend available at: http://localhost:${PORT}`);
 });
