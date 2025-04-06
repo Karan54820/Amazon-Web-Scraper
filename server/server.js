@@ -7,6 +7,7 @@ import { summarizeReviews } from "./utils/openAi.utils.js"; // Import summarizeR
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
+import fs from 'fs';
 
 // Load environment variables
 dotenv.config();
@@ -803,18 +804,56 @@ app.post("/scrape", async (req, res) => {
 
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
+  // Log the static file path for debugging
+  let staticPath = path.join(__dirname, '../client/build');
+  let indexPath = path.join(staticPath, 'index.html');
+  
+  // Check if client/build exists, otherwise fall back to server/public
+  if (!fs.existsSync(staticPath)) {
+    console.warn(`Static path does not exist: ${staticPath}`);
+    staticPath = path.join(__dirname, 'public');
+    indexPath = path.join(staticPath, 'index.html');
+    console.log(`Trying fallback static path: ${staticPath}`);
+  }
+  
+  console.log(`Serving static files from: ${staticPath}`);
+  
+  // Verify the path exists
+  if (fs.existsSync(staticPath)) {
+    console.log(`Static path exists: ${staticPath}`);
+  } else {
+    console.warn(`Neither primary nor fallback static path exists!`);
+  }
+  
   // Serve static files from the React app
-  app.use(express.static(path.join(__dirname, '../client/build')));
+  app.use(express.static(staticPath));
 
   // For any request that doesn't match an API route, send the React app
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/build/index.html'));
+  app.get('*', function(req, res) {
+    console.log(`Sending index.html from: ${indexPath}`);
+    
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      console.error(`index.html not found at: ${indexPath}`);
+      res.status(404).send('Not found: index.html is missing');
+    }
   });
 }
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
+  
+  // Special handling for path-to-regexp errors
+  if (err.message && err.message.includes('Missing parameter name')) {
+    console.error('Path-to-regexp error detected. This typically happens when a URL is mistakenly used as a route pattern.');
+    return res.status(500).json({ 
+      error: 'Invalid route configuration',
+      message: 'The server encountered an error with route configuration.'
+    });
+  }
+  
   res.status(500).json({ 
     error: 'Server error',
     message: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message
