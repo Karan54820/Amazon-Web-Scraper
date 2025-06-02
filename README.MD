@@ -31,9 +31,9 @@ A full-stack web application that allows users to scrape and analyze product dat
 
 ## Screenshots
 
-![Landing Page](LP.jpg)
+![Landing Page](LP.png)
 
-![Dashboard](SP.jpg)
+![Dashboard](Scrapp.png)
 
 ## Installation
 
