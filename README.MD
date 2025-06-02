@@ -29,6 +29,12 @@ A full-stack web application that allows users to scrape and analyze product dat
 - Node.js (v14 or higher)
 - npm (v6 or higher)
 
+## Screenshots
+
+![Landing Page](LP.jpg)
+
+![Dashboard](SP.jpg)
+
 ## Installation
 
 1. Clone the repository:
